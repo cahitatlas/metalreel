@@ -1,0 +1,17 @@
+name: build
+on:
+  push: {branches: [main]}
+  pull_request:
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 20}
+      - name: JS runtime
+        run: cd js && npm install --omit=optional && node build.mjs
+      - name: Swift renderer
+        run: swift build -c release --product metalreel
+      - name: CLI smoke test
+        run: .build/release/metalreel 2>&1 | head -5 || true

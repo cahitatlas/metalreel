@@ -1,0 +1,11 @@
+name: Bug
+description: A crash, an error or wrong output that is not a visual difference
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes: {label: What happened?, description: Command you ran and the full error output.}
+    validations: {required: true}
+  - type: input
+    id: env
+    attributes: {label: Mac, macOS, Xcode/Swift, Node, Remotion version}

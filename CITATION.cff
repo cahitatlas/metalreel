@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+title: "MetalReel: a native macOS renderer for Remotion projects"
+message: "If you use MetalReel in research or writing, please cite it as below."
+type: software
+authors:
+  - given-names: Cahit
+    family-names: Atlas
+repository-code: "https://github.com/cahitatlas/metalreel"
+license: MIT
+keywords: [remotion, video-rendering, metal, apple-silicon, videotoolbox, javascriptcore, react]

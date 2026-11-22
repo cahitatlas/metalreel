@@ -1,0 +1,22 @@
+name: Render difference
+description: A composition looks different in MetalReel than in Remotion
+labels: [render-difference]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks! A side-by-side image makes these fast to fix. `node scripts/compare.mjs --project <dir> YourComp:frame` writes one to `bench/compare/`. Please attach only media you are allowed to share.
+  - type: input
+    id: comp
+    attributes: {label: Composition and frame, placeholder: "MyComp, frame 120"}
+    validations: {required: true}
+  - type: dropdown
+    id: mode
+    attributes: {label: Mode, options: [native, hybrid, both]}
+    validations: {required: true}
+  - type: textarea
+    id: what
+    attributes: {label: What is different?, description: Paste or attach the side-by-side / diff images and the smallest code that reproduces it.}
+    validations: {required: true}
+  - type: input
+    id: env
+    attributes: {label: Mac, macOS, Remotion version, placeholder: "M3 Pro, macOS 26.1, remotion 4.0.539"}

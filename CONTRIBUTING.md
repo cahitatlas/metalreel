@@ -1,6 +1,7 @@
 # Contributing
 
-Thanks for helping! The most useful contributions right now:
+Thanks for helping! Open work is listed in [ROADMAP.md](ROADMAP.md) and in issues labelled `roadmap` and `good first issue`.
+The most useful contributions right now:
 
 1. **A composition that renders differently than Remotion.** Run
    `node scripts/compare.mjs --project <your project> YourComp:frame` and open an issue with the side-by-side

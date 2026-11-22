@@ -1,0 +1,14 @@
+name: Feature or missing API
+description: Something your composition uses that native mode does not support yet
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: Check [ROADMAP.md](https://github.com/cahitatlas/metalreel/blob/main/ROADMAP.md) first; if it is listed, a 👍 on that issue helps us prioritise.
+  - type: textarea
+    id: what
+    attributes: {label: Which API, component or CSS feature?, description: "For example `useAudioData`, `<canvas>`, Tailwind, `text-decoration`."}
+    validations: {required: true}
+  - type: textarea
+    id: why
+    attributes: {label: What are you building with it?}

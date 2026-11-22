@@ -1,18 +1,41 @@
 {
-  "name": "metalreel-js",
-  "private": true,
-  "type": "module",
-  "description": "JavaScript side of MetalReel: React host renderer for JavaScriptCore, browser shims, hybrid Chrome extractor, CLI.",
-  "scripts": {
-    "build": "node build.mjs"
-  },
-  "dependencies": {
-    "react-reconciler": "0.34.0"
-  },
-  "devDependencies": {
-    "esbuild": "0.25.12"
-  },
-  "optionalDependencies": {
-    "puppeteer-core": "^24.43.1"
-  }
+	"name": "metalreel-js",
+	"private": true,
+	"type": "module",
+	"description": "JavaScript side of MetalReel: React host renderer for JavaScriptCore, browser shims, hybrid Chrome extractor, CLI.",
+	"author": "Cahit Atlas (https://github.com/cahitatlas)",
+	"license": "MIT",
+	"homepage": "https://github.com/cahitatlas/metalreel#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/cahitatlas/metalreel.git",
+		"directory": "js"
+	},
+	"bugs": "https://github.com/cahitatlas/metalreel/issues",
+	"keywords": [
+		"remotion",
+		"remotion-renderer",
+		"video",
+		"video-rendering",
+		"react",
+		"metal",
+		"apple-silicon",
+		"macos",
+		"videotoolbox",
+		"javascriptcore",
+		"yoga",
+		"chrome-free"
+	],
+	"scripts": {
+		"build": "node build.mjs"
+	},
+	"dependencies": {
+		"react-reconciler": "0.34.0"
+	},
+	"devDependencies": {
+		"esbuild": "0.25.12"
+	},
+	"optionalDependencies": {
+		"puppeteer-core": "^24.43.1"
+	}
 }

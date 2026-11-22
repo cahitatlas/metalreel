@@ -8,12 +8,20 @@
 JavaScriptCore · Yoga · Core Text · Metal · VideoToolbox</p>
 
 <p align="center">
+  <a href="https://github.com/cahitatlas/metalreel/actions/workflows/build.yml"><img src="https://github.com/cahitatlas/metalreel/actions/workflows/build.yml/badge.svg" alt="build"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
+  <img src="https://img.shields.io/badge/platform-macOS%2015%2B%20%C2%B7%20Apple%20Silicon-black.svg" alt="macOS 15+ on Apple Silicon">
+  <img src="https://img.shields.io/badge/Swift-6-orange.svg" alt="Swift 6">
+  <a href="ROADMAP.md"><img src="https://img.shields.io/badge/roadmap-public-brightgreen.svg" alt="Public roadmap"></a>
+</p>
+
+<p align="center">
   <a href="#quick-start">Quick start</a> ·
   <a href="#benchmarks">Benchmarks</a> ·
   <a href="#before--after">Before / after</a> ·
   <a href="#what-makes-it-different">Features</a> ·
   <a href="#compatibility">Compatibility</a> ·
-  <a href="#roadmap">Roadmap</a> ·
+  <a href="ROADMAP.md">Roadmap</a> ·
   <a href="docs/ARCHITECTURE.md">Architecture</a>
 </p>
 
@@ -40,17 +48,20 @@ node js/cli/metalreel.mjs render MyComposition --project ~/my-remotion-app
 > MetalReel is a young, independent project. It is not affiliated with Remotion.
 > Compositions that use canvas or WebGL should use [hybrid mode](#two-modes) for now.
 
+**Keywords:** Remotion renderer · render Remotion without Chrome · headless-browser-free video rendering · React video ·
+programmatic video · Apple Silicon · Metal · VideoToolbox hardware encoding · JavaScriptCore · Yoga · Core Text · macOS
+
 ## Quick start
 
 Requirements: a Mac with Apple Silicon, macOS 15 or later, Xcode 16+ (Swift 6), and Node 20+.
 
 ```bash
-git clone https://github.com/OWNER/metalreel.git && cd metalreel   # replace OWNER with the GitHub account that hosts the repository
+git clone https://github.com/cahitatlas/metalreel.git && cd metalreel
 cd js && npm install && node build.mjs && cd ..   # React host renderer + browser shims
 swift build -c release                             # the native renderer
 ```
 
-Render any Remotion project (`OWNER` above is a placeholder until the repository is published). It needs `@remotion/bundler` in its dependencies, which Remotion projects
+Render any Remotion project. It needs `@remotion/bundler` in its dependencies, which Remotion projects
 already have through `@remotion/cli`.
 
 ```bash
@@ -281,19 +292,18 @@ Details are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Roadmap
 
-Not done yet, roughly in order:
+The full public to-do list is in **[ROADMAP.md](ROADMAP.md)**, and every item has an
+[issue labelled `roadmap`](https://github.com/cahitatlas/metalreel/issues?q=is%3Aissue+label%3Aroadmap).
+Up next, ordered by how many projects they unblock:
 
-- **Stylesheets and `className`:** a CSS cascade for Tailwind and CSS-module projects. Today, inline styles are native.
-- **`getBoundingClientRect` and measuring APIs:** feed layout results back to JS for `@remotion/layout-utils` and Code Hike–style measuring.
-- **Inline-block flow, text decorations, text stroke, per-corner radii, real 3D transforms**, and the rest of grid (explicit placement, spans, `auto-fill`).
-- **Native canvas 2D:** CoreGraphics-backed `CanvasRenderingContext2D`, so canvas compositions stay out of Chrome.
-- **Incremental layout:** keep Yoga nodes between frames and re-measure only what changed.
-- **Parallel rendering:** several JavaScriptCore contexts with frame ranges, merged in the encoder. *Estimate:* 2–3× more throughput on long videos.
-- **ProRes and HDR (HLG/PQ) output, alpha channel output, dual encoders** (both media engines on Max/Ultra chips).
-- **Neural Engine features:** on-device transcription for captions, face tracking for automatic reframing, and background removal (Vision / Core ML), exposed as React components.
-- **Native components (the React Native model):** heavy, frequently used components can be implemented in Swift and used from TSX like any other component.
-- **MetalReel Studio:** a SwiftUI app with a live Metal preview, timeline scrubbing, and hot reload.
-- **Lambda-style distribution:** render on a fleet of Macs.
+1. **Web Audio** for `useAudioData` / `visualizeAudio` (audiograms, music visualizers)
+2. **Measurement APIs:** `getBoundingClientRect`, `measureText`, `fitText`
+3. **Canvas 2D** on Core Graphics, which also unlocks the new `@remotion/media` `<Video>`
+4. **Stylesheets and `className`** (Tailwind, CSS modules)
+5. **3D models** (GLB) through a native SceneKit / RealityKit component, then WebGL / three.js
+
+Small CSS gaps (underline, text stroke, per-corner radii, real 3D transforms, inline-block) are listed there too and
+make good first contributions.
 
 ## Remotion license
 
@@ -305,6 +315,7 @@ endorsed by Remotion. "Remotion" is used only to describe compatibility.
 
 ## Credits and license
 
+- Created by [Cahit Atlas](https://github.com/cahitatlas).
 - MetalReel is MIT licensed ([LICENSE](LICENSE)). Third-party components are listed in [NOTICE.md](NOTICE.md); Yoga (MIT) is vendored.
 - Sample media is openly licensed and downloaded on demand; see [ATTRIBUTION.md](ATTRIBUTION.md).
 - Contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
