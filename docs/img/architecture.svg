@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" width="1200" height="640" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#64748b"/></marker>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#0ea5e9"/></marker>
+    <linearGradient id="hdr" x1="0" x2="1"><stop offset="0" stop-color="#0ea5e9"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient>
+  </defs>
+  <rect width="1200" height="640" rx="20" fill="#ffffff"/>
+  <rect x="0.5" y="0.5" width="1199" height="639" rx="20" fill="none" stroke="#e2e8f0"/>
+
+  <!-- left: Remotion's path -->
+  <text x="40" y="58" font-size="22" font-weight="700" fill="#0f172a">Remotion today</text>
+  <text x="40" y="84" font-size="14" fill="#64748b">every frame goes through a full browser</text>
+  <g font-size="15" fill="#0f172a">
+    <rect x="40" y="110" width="500" height="58" rx="12" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text x="60" y="137" font-weight="600">Remotion bundle (React + your code)</text><text x="60" y="157" font-size="13" fill="#64748b">webpack, same for both paths</text>
+    <rect x="40" y="198" width="500" height="58" rx="12" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text x="60" y="225" font-weight="600">Headless Chrome × N tabs</text><text x="60" y="245" font-size="13" fill="#64748b">DOM, style, layout, paint, compositing</text>
+    <rect x="40" y="286" width="500" height="58" rx="12" fill="#fff1f2" stroke="#fda4af"/>
+    <text x="60" y="313" font-weight="600">Screenshot every frame → JPEG/PNG</text><text x="60" y="333" font-size="13" fill="#be123c">GPU → CPU copy, encode, pipe, decode</text>
+    <rect x="40" y="374" width="500" height="58" rx="12" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text x="60" y="401" font-weight="600">Videos decoded by FFmpeg (compositor)</text><text x="60" y="421" font-size="13" fill="#64748b">frames sent back into Chrome as images</text>
+    <rect x="40" y="462" width="500" height="58" rx="12" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text x="60" y="489" font-weight="600">FFmpeg x264 (CPU)</text><text x="60" y="509" font-size="13" fill="#64748b">stitch frames + audio</text>
+  </g>
+  <g stroke="#64748b" stroke-width="2" fill="none" marker-end="url(#a)">
+    <path d="M290 168v26"/><path d="M290 256v26"/><path d="M290 344v26"/><path d="M290 432v26"/>
+  </g>
+  <text x="40" y="570" font-size="15" fill="#334155"><tspan font-weight="700">~30–40 fps</tspan> on the sample set · CPU-bound (Chrome tabs)</text>
+
+  <!-- right: MetalReel native -->
+  <rect x="600" y="28" width="572" height="584" rx="16" fill="#f0f9ff" stroke="#bae6fd"/>
+  <rect x="600" y="28" width="572" height="6" rx="3" fill="url(#hdr)"/>
+  <text x="630" y="68" font-size="22" font-weight="700" fill="#0f172a">MetalReel native</text>
+  <text x="630" y="94" font-size="14" fill="#0369a1">no browser · Apple's own engines</text>
+  <g font-size="15" fill="#0f172a">
+    <rect x="630" y="110" width="512" height="58" rx="12" fill="#ffffff" stroke="#7dd3fc"/>
+    <text x="650" y="137" font-weight="600">Same Remotion bundle, react-dom aliased</text><text x="650" y="157" font-size="13" fill="#64748b">user code unchanged · Remotion's own bundler</text>
+    <rect x="630" y="198" width="248" height="58" rx="12" fill="#ffffff" stroke="#7dd3fc"/>
+    <text x="650" y="225" font-weight="600">JavaScriptCore</text><text x="650" y="245" font-size="13" fill="#64748b">+ DOM/timer/fetch shims</text>
+    <rect x="894" y="198" width="248" height="58" rx="12" fill="#ffffff" stroke="#7dd3fc"/>
+    <text x="914" y="225" font-weight="600">react-reconciler</text><text x="914" y="245" font-size="13" fill="#64748b">element tree, ~2 ms/frame</text>
+    <rect x="630" y="286" width="248" height="58" rx="12" fill="#ffffff" stroke="#7dd3fc"/>
+    <text x="650" y="313" font-weight="600">Yoga</text><text x="650" y="333" font-size="13" fill="#64748b">flexbox · absolute · block</text>
+    <rect x="894" y="286" width="248" height="58" rx="12" fill="#ffffff" stroke="#7dd3fc"/>
+    <text x="914" y="313" font-weight="600">Core Text</text><text x="914" y="333" font-size="13" fill="#64748b">Chrome-matching line breaks</text>
+    <rect x="630" y="374" width="512" height="58" rx="12" fill="#ffffff" stroke="#7dd3fc"/>
+    <text x="650" y="401" font-weight="600">Display list → Core Image on Metal</text><text x="650" y="421" font-size="13" fill="#64748b">gradients, shadows, filters, blend modes, transforms</text>
+    <rect x="630" y="462" width="248" height="58" rx="12" fill="#ffffff" stroke="#7dd3fc"/>
+    <text x="650" y="489" font-weight="600">VideoToolbox decode</text><text x="650" y="509" font-size="13" fill="#64748b">IOSurface, zero copy</text>
+    <rect x="894" y="462" width="248" height="58" rx="12" fill="#ffffff" stroke="#7dd3fc"/>
+    <text x="914" y="489" font-weight="600">VideoToolbox encode</text><text x="914" y="509" font-size="13" fill="#64748b">H.264 / HEVC + AAC mix</text>
+    <rect x="1006" y="374" width="136" height="58" rx="12" fill="#fefce8" stroke="#fde047"/>
+    <text x="1020" y="398" font-size="13" font-weight="600">WebKit</text><text x="1020" y="418" font-size="12" fill="#854d0e">SVG, masks… once</text>
+  </g>
+  <g stroke="#0ea5e9" stroke-width="2" fill="none" marker-end="url(#g)">
+    <path d="M754 168v26"/><path d="M1018 168v26"/><path d="M878 227h12"/>
+    <path d="M1018 256q0 15 -264 26"/><path d="M754 256v26"/><path d="M878 315h12"/>
+    <path d="M754 344v26"/><path d="M1018 344v26"/>
+    <path d="M754 462v-26"/><path d="M1018 432v26"/>
+  </g>
+  <text x="630" y="570" font-size="15" fill="#0f172a"><tspan font-weight="700">~110–230 fps</tspan> on the sample set · ~10–25× less CPU time</text>
+  <text x="630" y="594" font-size="12" fill="#64748b">measured on Apple M5 Max, see bench/results</text>
+</svg>
