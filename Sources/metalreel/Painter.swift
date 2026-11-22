@@ -211,12 +211,24 @@ final class FontRegistry {
 			var f: CTFont? = nil
 			for a in familyList { if let y = pickFace(a, w, italic, ch.value) { f = ctFont(y, w, size); break } }
 			if f == nil { f = previousFont ?? font(ff, w, size) } // combining marks stay in the previous run; otherwise fall back to the legacy table / system font
+			if italic { f = oblique(f!) }
 			if primary == nil { primary = f }
 			if let o = previousFont, o !== f! { flush() }
 			previousFont = f; run.unicodeScalars.append(ch)
 		}
 		flush()
 		return (m, primary ?? font(ff, w, size))
+	}
+
+	/// font-style: italic without an italic face: Chrome synthesizes it (Blink's FontPlatformData sets Skia's skewX to
+	/// -1/4 in y-down space, i.e. x += 0.25·y above the baseline). Advances are unchanged, so measuring is unaffected.
+	private var obliques: [ObjectIdentifier: (CTFont, CTFont)] = [:]
+	private func oblique(_ f: CTFont) -> CTFont {
+		if CTFontGetSymbolicTraits(f).contains(.traitItalic) { return f }
+		if let o = obliques[ObjectIdentifier(f)], o.0 === f { return o.1 }
+		var m = CGAffineTransform(a: 1, b: 0, c: 0.25, d: 1, tx: 0, ty: 0)
+		let o = CTFontCreateCopyWithAttributes(f, CTFontGetSize(f), &m, nil)
+		obliques[ObjectIdentifier(f)] = (f, o); return o
 	}
 
 	func font(_ ff: String, _ w: Double, _ size: Double) -> CTFont {
