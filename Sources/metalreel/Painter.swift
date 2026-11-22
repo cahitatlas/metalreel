@@ -616,9 +616,12 @@ final class Painter {
 
 	/// Small boxes (particles, dots, badges): if the look is identical, draw once (with its filters), then only translate.
 	/// Position and opacity are not part of the key; sub-pixel position is rounded to 1/4 pixel.
+	/// Persisting costs a synchronous GPU render, so only looks that are expensive to build (shadow, gradient, border, filter)
+	/// are sprites; a plain fill / rounded rect is drawn directly (e.g. waveform bars whose height changes every frame).
 	private var sprites: [String: CIImage] = [:]
 	func sprite(_ op: [String: Any]) -> CIImage? {
-		guard (op["t"] as? String) == "r", let b = op["b"] as? [Double], b[2] * b[3] <= 320 * 320 else { return nil }
+		guard (op["t"] as? String) == "r", let b = op["b"] as? [Double], b[2] * b[3] <= 320 * 320,
+			op["sh"] != nil || op["gi"] != nil || op["br"] != nil || op["fl"] != nil else { return nil }
 		let ix = b[0].rounded(.down), iy = b[1].rounded(.down)
 		let fx = ((b[0] - ix) * 4).rounded() / 4, fy = ((b[1] - iy) * 4).rounded() / 4
 		let q = { (v: Double) in (v * 4).rounded() / 4 } // size is quantized to 1/4 pixel too (so growing/shrinking particles don't flood the cache)
