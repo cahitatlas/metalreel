@@ -1,0 +1,23 @@
+{
+  "name": "metalreel-examples",
+  "private": true,
+  "description": "Sample Remotion compositions used to test and benchmark MetalReel against Remotion's own renderer.",
+  "scripts": {
+    "studio": "remotion studio",
+    "media": "../scripts/download-media.sh"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.539",
+    "@remotion/cli": "4.0.539",
+    "@remotion/google-fonts": "4.0.539",
+    "@remotion/renderer": "4.0.539",
+    "@remotion/transitions": "^4.0.539",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remotion": "4.0.539"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "^5.6.0"
+  }
+}
