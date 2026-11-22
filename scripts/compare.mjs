@@ -24,6 +24,9 @@ for (const t of ['diff-map', 'side-by-side']) {
 }
 const chrome = opt.chrome ?? process.env.METALREEL_CHROME;
 const sh = (cmd, args, cwd = ROOT) => { const r = spawnSync(cmd, args, {cwd, encoding: 'utf8'}); if (r.status !== 0) { process.stderr.write(r.stderr.slice(-2000)); throw new Error(`${cmd} ${args.join(' ')} failed`); } return r.stdout + r.stderr; };
+if (!items.length) { console.error('usage: node scripts/compare.mjs --project <dir> [--hybrid] [--out dir] Comp:f1,f2 …'); process.exit(1); }
+// merge with earlier results in the same output folder (re-running one composition keeps the others)
+const prev = fs.existsSync(path.join(OUT, 'results.json')) ? JSON.parse(fs.readFileSync(path.join(OUT, 'results.json'), 'utf8')) : [];
 const results = [];
 for (const it of items) {
 	const [comp, frames] = it.split(':');
@@ -43,6 +46,7 @@ for (const it of items) {
 		process.stderr.write(`  MAE native ${row.native}${row.hybrid != null ? `, hybrid ${row.hybrid}` : ''}\n`);
 	}
 }
+for (const p of prev) if (!results.some((r) => r.comp === p.comp && r.frame === p.frame)) results.push(p);
 fs.writeFileSync(path.join(OUT, 'results.json'), JSON.stringify(results, null, 2));
 const md = ['| Composition | Frame | MAE native | MAE hybrid |', '|---|---|---|---|', ...results.map((r) => `| ${r.comp} | ${r.frame} | ${r.native.toFixed(2)} | ${r.hybrid != null ? r.hybrid.toFixed(2) : '–'} |`)].join('\n');
 fs.writeFileSync(path.join(OUT, 'results.md'), md + '\n\nMAE = mean absolute difference per RGB channel on a 0–255 scale, measured against `npx remotion still` (Chrome).\n');

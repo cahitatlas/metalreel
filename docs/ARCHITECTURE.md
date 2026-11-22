@@ -47,7 +47,7 @@ VideoToolbox.
 | 0 | Inventory of real projects: CSS properties, elements, packages | done (summary below) |
 | 1 | JavaScriptCore core and browser shims: timers, `fetch`/`staticFile`, `delayRender`, `FontFace` | done |
 | 2 | React host renderer (react-reconciler) | done |
-| 3 | Yoga layout + Core Text paragraphs | working; gaps listed in the roadmap |
+| 3 | Yoga layout + Core Text paragraphs | working; includes `text-align: justify` and basic `display: grid` (tracks, gaps, auto-placement); gaps listed in the roadmap |
 | 4 | Metal painting (shared with hybrid) | working |
 | 5 | Pixel validation against Remotion (`scripts/compare.mjs`) | done, MAE per frame in `bench/compare` |
 | 6 | SwiftUI Studio with live Metal preview | not started |
@@ -95,6 +95,6 @@ for 300 frames.
 - **AVAssetReader stops after about 682 s of continuous reading** ("Cannot Decode"). `VideoSource` detects that the reader ended early and reopens it at the current time.
 - **Frame selection.** Remotion shows the last frame whose timestamp is ≤ t. With 23.976 fps sources inside 30 fps compositions, a quarter-frame tolerance picked the next frame (MAE 10 → 2.7 after the fix). The tolerance is now 1.5 ms.
 - **HLG sources.** Remotion tone-maps HLG with ffmpeg's `zscale → hable → BT.709`. A 64³ LUT reproduces that chain, because Apple's own tone mapping came out about 10 levels darker.
-- **Text baseline.** Line boxes use Blink's rounded ascent and descent, and half-leading is split as LayoutNG does (floor to 1/64 above the baseline). `chromeAscent` picks the hhea, typo or win metrics that match the box.
+- **Text baseline.** Line boxes use Blink's rounded ascent and descent, and half-leading is rounded to whole pixels, because Blink rounds it to integers (verified on a case where the line box is 408 px, not 408.17). `chromeAscent` picks the hhea, typo or win metrics that match the box, and fonts are walked like Chrome's font-family list when computing line metrics (the first available family decides, later ones act as fallbacks).
 - **Gradient stops.** Gradient stops can be px, % or deg. A transparent stop takes its neighbor's color, the equivalent of premultiplied interpolation.
 - **Background vs border.** Backgrounds cover the border box, and the border ring is painted on top. This matters with translucent colors.

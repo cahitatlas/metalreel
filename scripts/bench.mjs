@@ -26,6 +26,12 @@ const throttled = () => { const t = spawnSync('pmset', ['-g', 'therm'], {encodin
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const machine = (() => { try { return execFileSync('sysctl', ['-n', 'machdep.cpu.brand_string'], {encoding: 'utf8'}).trim(); } catch { return os.cpus()[0]?.model ?? '?'; } })();
 
+// frame count of the rendered file (compositions whose duration comes from calculateMetadata)
+function videoFrames(file) {
+	const r = spawnSync('swift', ['-e', 'import AVFoundation; let t = AVURLAsset(url: URL(fileURLWithPath: CommandLine.arguments[1])).tracks(withMediaType: .video)[0]; print(Int((t.timeRange.duration.seconds * Double(t.nominalFrameRate)).rounded()))', file], {encoding: 'utf8'});
+	return +r.stdout.trim() || null;
+}
+
 function frameCount(comp) {
 	const src = fs.readFileSync(path.join(PROJECT, 'src/Root.tsx'), 'utf8');
 	const m = new RegExp(`id="${comp}"[^>]*durationInFrames=\\{(\\d+)\\}`).exec(src);
@@ -50,24 +56,29 @@ async function run(mode, comp) {
 	if (code !== 0) { process.stderr.write(err.slice(-3000)); throw new Error(`${mode} ${comp} failed`); }
 	const user = +/([\d.]+) user/.exec(err)[1], sys = +/([\d.]+) sys/.exec(err)[1];
 	const rss = +/(\d+)\s+maximum resident set size/.exec(err)[1];
-	const frames = frameCount(comp);
+	const frames = frameCount(comp) ?? videoFrames(out);
 	return {comp, mode, frames, wall: +wall.toFixed(2), fps: +(frames / wall).toFixed(1), cpu: +(user + sys).toFixed(1), cpuPct: Math.round(((user + sys) / wall) * 100),
 		rssMB: Math.round(rss / 1e6), gpuAvg: samples.length ? Math.round(samples.reduce((a, b) => a + b, 0) / samples.length) : null, gpuPeak: samples.length ? Math.max(...samples) : null,
-		sizeMB: +(fs.statSync(out).size / 1e6).toFixed(1), detail: (so.match(/DONE.*$/m) ?? [''])[0]};
+		sizeMB: +(fs.statSync(out).size / 1e6).toFixed(1), detail: (so.match(/DONE.*$/m) ?? [''])[0].split(ROOT + '/').join('').split(os.homedir()).join('~')};
 }
 
 // warm caches (bundles, Swift build, Chrome download) so timings measure rendering
 for (const mode of MODES.filter((m) => m !== 'remotion')) spawnSync(process.execPath, [path.join(ROOT, 'js/cli/metalreel.mjs'), 'still', comps[0], '--project', PROJECT, '--mode', mode, '--frame', '0', '--png', path.join(os.tmpdir(), 'metalreel-warm.png'), ...(mode === 'hybrid' && chrome ? ['--chrome', chrome] : [])], {stdio: 'ignore'});
 
+const prevFile = path.join(OUT, 'results.json');
+const prev = fs.existsSync(prevFile) ? JSON.parse(fs.readFileSync(prevFile, 'utf8')).results ?? [] : [];
 const results = [];
+const merged = () => [...results, ...prev.filter((p) => !results.some((r) => r.comp === p.comp && r.mode === p.mode))].sort((a, b) => order(a) - order(b));
+const order = (r) => { const i = comps.indexOf(r.comp); const pi = prev.findIndex((p) => p.comp === r.comp); return (i >= 0 && pi < 0 ? 1000 + i : pi >= 0 ? pi : i) * 3 + MODES.indexOf(r.mode); };
 for (const comp of comps) for (const mode of MODES) {
 	process.stderr.write(`${comp} · ${mode}…\n`);
 	const r = await run(mode, comp); results.push(r);
 	process.stderr.write(`  ${r.wall} s, ${r.fps} fps, CPU ${r.cpu} s (${r.cpuPct}%), GPU avg ${r.gpuAvg}% peak ${r.gpuPeak}%\n`);
-	fs.writeFileSync(path.join(OUT, 'results.json'), JSON.stringify({machine, date: new Date().toISOString(), results}, null, 2));
+	fs.writeFileSync(path.join(OUT, 'results.json'), JSON.stringify({machine, date: new Date().toISOString(), results: merged()}, null, 2));
 }
-const rows = results.map((r) => {
-	const base = results.find((x) => x.comp === r.comp && x.mode === 'remotion');
+const all = merged();
+const rows = all.map((r) => {
+	const base = all.find((x) => x.comp === r.comp && x.mode === 'remotion');
 	return `| ${r.comp} | ${r.mode} | ${r.frames} | ${r.wall} | ${r.fps} | ${base ? (base.wall / r.wall).toFixed(1) + '×' : '–'} | ${r.cpu} | ${r.gpuAvg ?? '–'}% | ${r.rssMB} | ${r.sizeMB} |`;
 });
 const md = [`Machine: ${machine}, macOS ${os.release()}. Measured ${new Date().toISOString().slice(0, 10)}.`, '',

@@ -25,7 +25,7 @@
   <g stroke="#64748b" stroke-width="2" fill="none" marker-end="url(#a)">
     <path d="M290 168v26"/><path d="M290 256v26"/><path d="M290 344v26"/><path d="M290 432v26"/>
   </g>
-  <text x="40" y="570" font-size="15" fill="#334155"><tspan font-weight="700">~30–40 fps</tspan> on the sample set · CPU-bound (Chrome tabs)</text>
+  <text x="40" y="570" font-size="15" fill="#334155"><tspan font-weight="700">31–83 fps</tspan> on the sample set · CPU-bound (Chrome tabs)</text>
 
   <!-- right: MetalReel native -->
   <rect x="600" y="28" width="572" height="584" rx="16" fill="#f0f9ff" stroke="#bae6fd"/>
@@ -58,6 +58,6 @@
     <path d="M754 344v26"/><path d="M1018 344v26"/>
     <path d="M754 462v-26"/><path d="M1018 432v26"/>
   </g>
-  <text x="630" y="570" font-size="15" fill="#0f172a"><tspan font-weight="700">~110–230 fps</tspan> on the sample set · ~10–25× less CPU time</text>
+  <text x="630" y="570" font-size="15" fill="#0f172a"><tspan font-weight="700">118–271 fps</tspan> on the sample set · 5–41× less CPU time</text>
   <text x="630" y="594" font-size="12" fill="#64748b">measured on Apple M5 Max, see bench/results</text>
 </svg>

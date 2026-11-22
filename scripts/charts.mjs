@@ -24,7 +24,7 @@ function chart({file, title, subtitle, value, unit, better}) {
 			const v = value(r);
 			body += `<rect x="${left}" y="${y + 2}" width="${Math.max(2, x(v) - left)}" height="${rowH - 4}" rx="3" fill="${color}"/>`;
 			const base = get(c, 'remotion');
-			const extra = m !== 'remotion' && base ? (better === 'higher' ? ` · ${(v / value(base)).toFixed(1)}×` : ` · ${(value(base) / Math.max(v, 1e-9)).toFixed(0)}× less`) : '';
+			const extra = m !== 'remotion' && base ? (better === 'higher' ? ` · ${(v / value(base)).toFixed(1)}×` : (() => { const q = value(base) / Math.max(v, 1e-9); return q >= 1.05 ? ` · ${q.toFixed(q >= 10 ? 0 : 1)}× less` : q <= 0.95 ? ` · ${(1 / q).toFixed(1)}× more` : ' · about the same'; })()) : '';
 			body += `<text x="${x(v) + 6}" y="${y + rowH - 5}" font-size="12" fill="#334155">${v >= 100 ? Math.round(v) : v.toFixed(1)} ${unit}${extra}</text>`;
 			y += rowH;
 		}

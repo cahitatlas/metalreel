@@ -8,3 +8,4 @@ examples/public/media/
 examples/public/img/
 bench/results/videos/
 *.part
+bench/compare/
