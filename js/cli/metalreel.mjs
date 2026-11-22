@@ -24,7 +24,12 @@ const positional = argv.slice(1).filter((a, i, arr) => !a.startsWith('--') && !(
 const opt = {};
 for (let i = 1; i < argv.length; i++) if (argv[i].startsWith('--')) { const k = argv[i].slice(2); const v = argv[i + 1]; if (v === undefined || v.startsWith('--')) opt[k] = true; else { opt[k] = v; i++; } }
 const die = (m) => { console.error('metalreel: ' + m); process.exit(1); };
-if (!['render', 'still', 'compositions'].includes(cmd)) die('usage: metalreel render|still|compositions <CompositionId> --project <dir> [--mode native|hybrid]');
+if (!['render', 'still', 'compositions'].includes(cmd)) die(`usage:
+  metalreel render <CompositionId> --project <dir> [--mode native|hybrid] [--frames a-b] [--out file.mp4]
+                   [--props '{"k":1}'] [--codec h264|hevc] [--bitrate 6M] [--muted] [--no-webkit] [--dump-ops file.ndjson]
+                   [--chrome <path>] [--tabs N]   (hybrid only)
+  metalreel still <CompositionId> --project <dir> --frame N --png out.png [--mode native|hybrid]
+  metalreel compositions --project <dir>`);
 const PROJECT = path.resolve(opt.project ?? process.cwd());
 if (!fs.existsSync(path.join(PROJECT, 'package.json'))) die(`no package.json in ${PROJECT}`);
 const MODE = opt.mode ?? 'native';

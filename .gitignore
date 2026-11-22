@@ -9,3 +9,4 @@ examples/public/img/
 bench/results/videos/
 *.part
 bench/compare/
+.remotion/

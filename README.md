@@ -91,6 +91,8 @@ Options: `--mode native|hybrid`, `--frames a-b`, `--props '{"name":"Sam"}'`, `--
 
 Both modes paint and encode identically, so you can switch per composition and compare.
 
+Hybrid mode needs Chrome Headless Shell. If you don't pass `--chrome <path>` (or set `METALREEL_CHROME`), Remotion's `ensureBrowser()` downloads it once on first use. Native mode never starts a browser.
+
 ## Benchmarks
 
 <p align="center"><img src="docs/img/speed.svg" alt="Render speed per composition and mode" width="100%"></p>
