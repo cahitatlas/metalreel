@@ -6,7 +6,7 @@
 // What is native today: block/flex/absolute layout (Yoga, content-box/border-box), inline text with
 // mixed styles and Chrome-like greedy line breaking (Core Text shaping), backgrounds, gradients,
 // borders, radii, box/text shadows, opacity, 2D transforms with transform-origin, overflow clipping,
-// filters (blur & color), blend modes, <img>, <OffthreadVideo>. Anything else (SVG, clip-path, mask,
+// filters (blur & color), blend modes, <img>, <OffthreadVideo>, basic grid (see `buildGrid`). Anything else (SVG, clip-path, mask,
 // drop-shadow, canvas) is rendered by WebKit for that element only (see WebFallback.swift).
 import Foundation
 import CoreGraphics
@@ -29,6 +29,7 @@ final class Box {
 	var display = "block"
 	var paragraph: Paragraph?  // inline formatting context owned by this box
 	var intrinsic: CGSize?     // replaced elements
+	var gridStretch = false    // grid item stretched to its row (align-self: normal/stretch with height auto)
 	init(tag: String, style: [String: String], attrs: [String: Any], text: String?, markup: String?) {
 		self.tag = tag; self.style = style; self.attrs = attrs; self.text = text; self.markup = markup
 	}
@@ -213,6 +214,9 @@ final class NativeFrontEnd {
 			return n
 		}
 		let kids = b.children.filter { !($0.isText && ($0.text ?? "").isEmpty) }
+		if b.display == "grid" || b.display == "inline-grid", let cols = gridColumns(b) {
+			buildGrid(b, n, kids, cols); return n
+		}
 		// a box whose content is only inline → it owns one paragraph and is measured as a leaf
 		if !kids.isEmpty, kids.allSatisfy(isInlineContent), kids.contains(where: { $0.isText || $0.display == "inline" }) {
 			if b.display == "flex" || b.display == "inline-flex" {
@@ -259,7 +263,9 @@ final class NativeFrontEnd {
 			YGNodeStyleSetFlexDirection(n, ["column": .column, "column-reverse": .columnReverse, "row-reverse": .rowReverse][fd] ?? .row)
 			let wrap = b["flexWrap"] ?? (b["flexFlow"]?.contains("wrap") == true ? (b["flexFlow"]!.contains("wrap-reverse") ? "wrap-reverse" : "wrap") : "nowrap")
 			YGNodeStyleSetFlexWrap(n, wrap == "wrap" ? .wrap : wrap == "wrap-reverse" ? .wrapReverse : .noWrap)
-		case "grid", "inline-grid": Diagnostics.warn("display:grid approximated as a flex column"); YGNodeStyleSetFlexDirection(n, .column)
+		case "grid", "inline-grid":
+			YGNodeStyleSetFlexDirection(n, .column)
+			if gridColumns(b) == nil { Diagnostics.warn("grid-template-columns '\(b["gridTemplateColumns"] ?? "")' not supported; grid approximated as a flex column") }
 		default: // block-level boxes stack vertically and stretch horizontally
 			YGNodeStyleSetFlexDirection(n, .column); YGNodeStyleSetAlignItems(n, .stretch)
 		}
@@ -267,7 +273,7 @@ final class NativeFrontEnd {
 		if let v = b["justifyContent"] { YGNodeStyleSetJustifyContent(n, ["center": .center, "flex-end": .flexEnd, "end": .flexEnd, "right": .flexEnd, "space-between": .spaceBetween, "space-around": .spaceAround, "space-evenly": .spaceEvenly][v] ?? .flexStart) }
 		let alignMap: [String: YGAlign] = ["center": .center, "flex-start": .flexStart, "start": .flexStart, "self-start": .flexStart, "flex-end": .flexEnd, "end": .flexEnd, "self-end": .flexEnd, "stretch": .stretch, "normal": .stretch, "baseline": .baseline, "space-between": .spaceBetween, "space-around": .spaceAround, "space-evenly": .spaceEvenly]
 		if let v = b["alignItems"] { YGNodeStyleSetAlignItems(n, alignMap[v] ?? .stretch) }
-		if let v = b["alignSelf"], v != "auto" { YGNodeStyleSetAlignSelf(n, alignMap[v] ?? .auto) }
+		if let v = b["alignSelf"], v != "auto", parentDisplay != "grid-cell" { YGNodeStyleSetAlignSelf(n, alignMap[v] ?? .auto) }
 		if let v = b["alignContent"] { YGNodeStyleSetAlignContent(n, alignMap[v] ?? .stretch) }
 		if let v = b["placeItems"] { let p = CSS.splitSpaces(v); YGNodeStyleSetAlignItems(n, alignMap[p[0]] ?? .stretch); if p.count > 1 || true { YGNodeStyleSetJustifyContent(n, ["center": .center, "end": .flexEnd, "flex-end": .flexEnd][p.last!] ?? .flexStart) } }
 		// flex item properties
@@ -282,6 +288,7 @@ final class NativeFrontEnd {
 		if let v = b["flexGrow"].flatMap(Double.init) { grow = v }
 		if let v = b["flexShrink"].flatMap(Double.init) { shrink = v }
 		if let v = b["flexBasis"] { basis = v }
+		if parentDisplay == "grid-cell" { grow = b.gridStretch ? 1 : 0; shrink = b.gridStretch ? 1 : 0; basis = "auto" } // flex properties don't apply to grid items
 		YGNodeStyleSetFlexGrow(n, Float(grow ?? 0))
 		YGNodeStyleSetFlexShrink(n, Float(shrink ?? (flexParent ? 1 : 0)))
 		if let bs = basis { switch CSS.length(bs, cx) { case .px(let v): YGNodeStyleSetFlexBasis(n, Float(v)); case .percent(let p): YGNodeStyleSetFlexBasisPercent(n, Float(p)); default: YGNodeStyleSetFlexBasisAuto(n) } }
@@ -323,10 +330,134 @@ final class NativeFrontEnd {
 			if let w = borderWidth(b, k, cx) { YGNodeStyleSetBorder(n, e, Float(w)) }
 		}
 		// gaps
-		let gap = b["gap"].map(CSS.splitSpaces)
-		if let g = b["rowGap"] ?? gap?.first, let v = CSS.resolve(CSS.length(g, cx), 0) { YGNodeStyleSetGap(n, .row, Float(v)) }
+		let gap = (b["gap"] ?? b["gridGap"]).map(CSS.splitSpaces)
+		if let g = b["rowGap"] ?? b["gridRowGap"] ?? gap?.first, let v = CSS.resolve(CSS.length(g, cx), 0) { YGNodeStyleSetGap(n, .row, Float(v)) }
 		if let g = b["columnGap"] ?? gap?.last, let v = CSS.resolve(CSS.length(g, cx), 0) { YGNodeStyleSetGap(n, .column, Float(v)) }
 		if let o = b["overflow"] ?? b["overflowX"] ?? b["overflowY"], o != "visible" { YGNodeStyleSetOverflow(n, .hidden) }
+		if (b.display == "grid" || b.display == "inline-grid") && gridColumns(b) != nil {
+			// rows (see buildGrid) always span the container; align-content distributes them vertically
+			YGNodeStyleSetAlignItems(n, .stretch)
+			YGNodeStyleSetJustifyContent(n, ["center": .center, "end": .flexEnd, "flex-end": .flexEnd, "space-between": .spaceBetween, "space-around": .spaceAround, "space-evenly": .spaceEvenly][b["alignContent"] ?? ""] ?? .flexStart)
+		}
+	}
+
+	// MARK: grid
+	enum GridTrack: Equatable { case px(Double), percent(Double), fr(Double), auto }
+	/// column tracks of a grid container (no template: one auto column); nil when the template isn't supported
+	private func gridColumns(_ b: Box) -> [GridTrack]? { b["gridTemplateColumns"] == nil ? [.auto] : gridTracks(b["gridTemplateColumns"], b) }
+	/// `grid-template-columns` / `-rows`: px, %, other lengths, fr, auto, minmax(a, b) (as b), repeat(N, …) and line names.
+	/// nil for what needs the container size or content (auto-fill / auto-fit, subgrid, masonry).
+	private func gridTracks(_ raw: String?, _ b: Box) -> [GridTrack]? {
+		guard let raw = raw?.trimmingCharacters(in: .whitespaces), !raw.isEmpty, raw != "none" else { return nil }
+		let cx = CSS.Ctx(fontSize: b.cs.fontSize, vw: W, vh: H)
+		func one(_ t: String) -> GridTrack? {
+			let l = t.lowercased()
+			if l.hasSuffix("fr"), let v = Double(l.dropLast(2)) { return .fr(v) }
+			if ["auto", "min-content", "max-content"].contains(l) || l.hasPrefix("fit-content(") { return .auto }
+			if l.hasPrefix("minmax("), l.hasSuffix(")") {
+				let a = splitTopLevelCommas(l.dropFirst(7).dropLast())
+				return a.count == 2 ? one(a[1]) ?? one(a[0]) : nil
+			}
+			switch CSS.length(l, cx) { case .px(let v): return .px(v); case .percent(let p): return .percent(p); case .auto: return .auto; default: return nil }
+		}
+		var out: [GridTrack] = []
+		var inName = false
+		for tok in CSS.splitSpaces(raw) {
+			if tok.hasPrefix("[") || inName { inName = !tok.hasSuffix("]"); continue } // [line names]
+			if tok.lowercased().hasPrefix("repeat("), tok.hasSuffix(")") {
+				let a = splitTopLevelCommas(tok.dropFirst(7).dropLast())
+				guard a.count == 2, let k = Int(a[0]), k > 0, let inner = gridTracks(a[1], b) else { return nil }
+				for _ in 0..<min(k, 1000) { out += inner }
+				continue
+			}
+			guard let t = one(tok) else { return nil }
+			out.append(t)
+		}
+		return out.isEmpty ? nil : out
+	}
+
+	/// CSS grid for the common cases: fixed track lists (px, %, fr; auto columns count as 1fr), gaps, auto-placement
+	/// in row order, justify/align-items/-self, justify-content (columns) and align-content (rows). It is built from
+	/// Yoga flex boxes: the container is a column of anonymous rows (row-gap), each row a flex row of anonymous
+	/// cells (column-gap) that carry the column tracks (fr → flex-grow with a zero basis, so every row splits the
+	/// width the same way; missing cells of the last row are empty placeholders), and each cell holds one item.
+	/// Auto rows are as tall as their tallest item and share leftover height (align-content: normal stretches
+	/// them). Not modelled: explicit placement and spans (gridColumn / gridRow / gridArea), auto-fill/auto-fit,
+	/// content-based track sizing (an fr column never grows to fit its min-content), grid-auto-flow: column/dense.
+	private func buildGrid(_ b: Box, _ n: YGNodeRef, _ kids: [Box], _ colTracks: [GridTrack]) {
+		let cols = colTracks.map { $0 == .auto ? GridTrack.fr(1) : $0 }
+		func anon(_ tag: String, _ style: [String: String], _ display: String, _ children: [Box]) -> Box {
+			let a = Box(tag: tag, style: style, attrs: [:], text: nil, markup: nil); a.cs = b.cs; a.display = display; a.parent = b
+			a.children = children; for c in children { c.parent = a }
+			return a
+		}
+		// items: in-flow children in order; each run of inline content becomes one anonymous item
+		var items: [Box] = [], outOfFlow: [Box] = [], pending: [Box] = []
+		func flush() {
+			if pending.contains(where: { !$0.isText || !($0.text ?? "").allSatisfy(\.isWhitespace) }) { items.append(anon("#anon", [:], "block", pending)) }
+			pending.removeAll()
+		}
+		for k in kids {
+			if isInlineContent(k) { pending.append(k); continue }
+			flush()
+			if k.display == "none" || ["absolute", "fixed"].contains(k["position"] ?? "") { outOfFlow.append(k) } else { items.append(k) }
+		}
+		flush()
+		if items.contains(where: { k in ["gridColumn", "gridRow", "gridArea", "gridColumnStart", "gridColumnEnd", "gridRowStart", "gridRowEnd"].contains { k[$0] != nil && k[$0] != "auto" } }) {
+			Diagnostics.warn("grid item placement (gridColumn/gridRow/gridArea) ignored; items auto-placed in order")
+		}
+		if let f = b["gridAutoFlow"], f.contains("column") { Diagnostics.warn("grid-auto-flow: \(f) placed in row order") }
+		if b["gridTemplateAreas"] != nil { Diagnostics.warn("grid-template-areas ignored") }
+		let rowTracks = gridTracks(b["gridTemplateRows"], b) ?? []
+		let autoRows = gridTracks(b["gridAutoRows"], b) ?? [.auto]
+		let nRows = max(rowTracks.count, (items.count + cols.count - 1) / cols.count)
+		func rowTrack(_ r: Int) -> GridTrack { r < rowTracks.count ? rowTracks[r] : autoRows[(r - rowTracks.count) % autoRows.count] }
+		let gap = (b["gap"] ?? b["gridGap"]).map(CSS.splitSpaces)
+		let colGap = b["columnGap"] ?? b["gridColumnGap"] ?? gap?.last
+		let anyFrRow = (0..<nRows).contains { if case .fr = rowTrack($0) { return true }; return false }
+		let stretchRows = ["normal", "stretch"].contains(b["alignContent"] ?? "normal") && !anyFrRow
+		// alignment of an item inside its cell: block axis → cell justify-content, inline axis → cell align-items
+		func split2(_ v: String?) -> (String?, String?) { guard let v else { return (nil, nil) }; let p = CSS.splitSpaces(v); return (p.first, p.count > 1 ? p[1] : p.first) }
+		let (placeA, placeJ) = split2(b["placeItems"])
+		let yMap = ["center": "center", "end": "flex-end", "flex-end": "flex-end", "self-end": "flex-end", "start": "flex-start", "flex-start": "flex-start", "self-start": "flex-start", "baseline": "flex-start"]
+		let xMap = ["center": "center", "end": "flex-end", "flex-end": "flex-end", "self-end": "flex-end", "right": "flex-end", "start": "flex-start", "flex-start": "flex-start", "self-start": "flex-start", "left": "flex-start"]
+		var rows: [Box] = []
+		for r in 0..<nRows {
+			var cells: [Box] = []
+			for c in 0..<cols.count {
+				var cs: [String: String] = ["minWidth": "0px"]
+				switch cols[c] {
+				case .px(let v): cs["width"] = "\(v)px"; cs["flexShrink"] = "0"
+				case .percent(let p): cs["width"] = "\(p)%"; cs["flexShrink"] = "0"
+				case .fr(let f): cs["flexGrow"] = "\(f)"; cs["flexBasis"] = "0px"; cs["flexShrink"] = "1"
+				case .auto: break
+				}
+				var content: [Box] = []
+				if r * cols.count + c < items.count {
+					let it = items[r * cols.count + c]
+					let (selfA, selfJ) = split2(it["placeSelf"])
+					let ya = [it["alignSelf"], selfA].compactMap { $0 }.first { $0 != "auto" } ?? b["alignItems"] ?? placeA ?? "stretch"
+					let xa = [it["justifySelf"], selfJ].compactMap { $0 }.first { $0 != "auto" } ?? b["justifyItems"] ?? placeJ ?? "stretch"
+					if let v = yMap[ya] { cs["justifyContent"] = v }
+					if let v = xMap[xa] { cs["alignItems"] = v }
+					it.gridStretch = yMap[ya] == nil && [nil, "auto"].contains(it["height"])
+					content = [it]
+				}
+				cells.append(anon("#grid-cell", cs, "grid-cell", content))
+			}
+			var rs: [String: String] = [:]
+			if let g = colGap { rs["columnGap"] = g }
+			if let j = b["justifyContent"] { rs["justifyContent"] = j }
+			switch rowTrack(r) {
+			case .px(let v): rs["height"] = "\(v)px"
+			case .percent(let p): rs["height"] = "\(p)%"
+			case .fr(let f): rs["flexGrow"] = "\(f)"; rs["flexBasis"] = "0px"
+			case .auto: if stretchRows { rs["flexGrow"] = "1" }
+			}
+			rows.append(anon("#grid-row", rs, "flex", cells))
+		}
+		b.children = rows + outOfFlow
+		for (i, k) in b.children.enumerated() { YGNodeInsertChild(n, yoga(k, parentDisplay: b.display), Int(i)) }
 	}
 
 	/// border width for side k (0 top, 1 right, 2 bottom, 3 left); nil when no visible border
@@ -546,8 +677,12 @@ final class NativeFrontEnd {
 			let free = content.width - line.width
 			var x0 = content.minX
 			switch align { case "center", "-webkit-center": x0 += free / 2; case "right", "-webkit-right": x0 += free; case "end": x0 += b.cs.direction == "rtl" ? 0 : free; case "start": x0 += b.cs.direction == "rtl" ? free : 0; default: break }
-			if align == "justify" { Diagnostics.warn("text-align: justify drawn as start") }
-			for run in line.runs where !run.text.isEmpty && run.style.visible {
+			var runs = line.runs
+			if align == "justify" {
+				// full lines are stretched word by word; the last line (text-align-last: auto) is start-aligned
+				if let j = p.justified(line, width: content.width) { runs = j } else if b.cs.direction == "rtl" { x0 += free }
+			}
+			for run in runs where !run.text.isEmpty && run.style.visible {
 				let s = run.style
 				let local = CGRect(x: x0 + run.x, y: y + line.baseline - run.ascent, width: run.width, height: run.ascent + run.descent)
 				var op: [String: Any] = ["t": "x", "s": run.text, "ff": s.fontFamily, "fw": s.fontWeight, "fs": s.fontSize * k, "fi": s.italic ? 1 : 0, "col": CSS.computed(s.color), "ls": s.letterSpacing * k]
