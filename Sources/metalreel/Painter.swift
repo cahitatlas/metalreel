@@ -69,7 +69,13 @@ func gradientImage(_ css: String, _ w: Int, _ h: Int) -> CGImage? {
 		}
 	} else if conic {
 		let p = first.split(separator: " ").map(String.init)
-		if let fi = p.firstIndex(of: "from"), fi + 1 < p.count { angle = p[fi + 1].hasSuffix("turn") ? (Double(p[fi + 1].dropLast(4)) ?? 0) * 360 : p[fi + 1].hasSuffix("rad") ? (Double(p[fi + 1].dropLast(3)) ?? 0) * 180 / .pi : Double(p[fi + 1].replacingOccurrences(of: "deg", with: "")) ?? 0 } else { angle = 0 }
+		angle = 0
+		if let fi = p.firstIndex(of: "from"), fi + 1 < p.count {
+			let a: String = p[fi + 1]
+			if a.hasSuffix("turn") { let v: Double = Double(a.dropLast(4)) ?? 0; angle = v * 360 }
+			else if a.hasSuffix("rad") { let v: Double = Double(a.dropLast(3)) ?? 0; angle = v * 180 / Double.pi }
+			else { angle = Double(a.replacingOccurrences(of: "deg", with: "")) ?? 0 }
+		}
 		if let at = p.firstIndex(of: "at") { if at + 1 < p.count { cx = cssLength(Substring(p[at + 1]), W) ?? cx }; if at + 2 < p.count { cy = cssLength(Substring(p[at + 2]), H) ?? cy } }
 	} else {
 		if first.hasSuffix("deg") { angle = Double(first.dropLast(3)) ?? 180 }
