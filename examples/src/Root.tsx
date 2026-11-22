@@ -10,6 +10,7 @@ import {CodeWalkthrough} from './compositions/CodeWalkthrough';
 import {ProductPromo} from './compositions/ProductPromo';
 import {PhotoSlideshow} from './compositions/PhotoSlideshow';
 import {LongForm} from './compositions/LongForm';
+import {FeatureCheck, featureCheckDefaults, featureCheckMetadata} from './compositions/FeatureCheck';
 
 export const Root: React.FC = () => (
 	<>
@@ -35,5 +36,7 @@ export const Root: React.FC = () => (
 		<Composition id="PhotoSlideshow" component={PhotoSlideshow} width={1920} height={1080} fps={30} durationInFrames={320} />
 		{/* long-form lecture layout, 5 minutes: slides + looping camera + captions (for long-render benchmarks) */}
 		<Composition id="LongForm" component={LongForm} width={1920} height={1080} fps={30} durationInFrames={9000} />
+		{/* native coverage check: calculateMetadata, Series/Freeze, RTL, bg-image, inline styles, Img, zIndex/transform, justify/grid */}
+		<Composition id="FeatureCheck" component={FeatureCheck} width={1920} height={1080} fps={30} durationInFrames={120} defaultProps={featureCheckDefaults} calculateMetadata={featureCheckMetadata} />
 	</>
 );
