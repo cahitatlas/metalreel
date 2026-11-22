@@ -242,9 +242,35 @@ final class NativeFrontEnd {
 			}
 			pending.removeAll()
 		}
+		// inline-level replaced elements (an inline <svg>/<img> in a block) sit on a line box: their bottom margin edge
+		// on the baseline of the block's strut, so the line is the element plus the strut's descent below it (the
+		// classic gap under an inline image; 4 px for the default 16px Times). Consecutive ones share one line.
+		var line: [Box] = []
+		func flushLine() {
+			guard !line.isEmpty else { return }
+			let (above, below) = Paragraph.strut(b.cs, fonts)
+			let onBaseline = line.allSatisfy { ["baseline", nil].contains($0["verticalAlign"]) }
+			let align = b.cs.textAlign, rtl = b.cs.direction == "rtl"
+			let jc = ["center": "center", "-webkit-center": "center", "right": "flex-end", "-webkit-right": "flex-end", "end": rtl ? "flex-start" : "flex-end", "start": rtl ? "flex-end" : "flex-start"][align] ?? "flex-start"
+			var st: [String: String] = ["flexDirection": "row", "alignItems": "flex-end", "justifyContent": jc, "minHeight": "\(above + below)px"]
+			if onBaseline { st["paddingBottom"] = "\(below)px" } else { Diagnostics.warn("vertical-align on an inline replaced element approximated as bottom") }
+			let anon = Box(tag: "#anon-line", style: st, attrs: [:], text: nil, markup: nil); anon.cs = b.cs; anon.display = "flex"; anon.parent = b
+			anon.children = line; for k in line { k.parent = anon }; groups.append(anon)
+			line.removeAll()
+		}
+		let blockContainer = !["flex", "inline-flex", "grid", "inline-grid"].contains(b.display) && b.tag != "#anon-line"
+		func inlineReplaced(_ k: Box) -> Bool {
+			// a percentage height would resolve against the line wrapper instead of the block; keep those as blocks
+			blockContainer && (k.markup != nil || k.tag == "img" || k.tag == "video") && ["inline", "inline-block"].contains(k.display)
+				&& !(k["height"]?.hasSuffix("%") ?? false) && !(k["position"].map { ["absolute", "fixed"].contains($0) } ?? false)
+		}
 		for k in kids {
+			if inlineReplaced(k) { flush(); line.append(k); continue }
+			if !line.isEmpty, k.isText, (k.text ?? "").allSatisfy(\.isWhitespace) { continue } // whitespace between icons
+			flushLine()
 			if isInlineContent(k) && !(k.display == "inline" && k.children.contains { !isInlineContent($0) }) { pending.append(k) } else { flush(); groups.append(k) }
 		}
+		flushLine()
 		flush()
 		b.children = groups
 		for (i, k) in groups.enumerated() where k.display != "none" || true { YGNodeInsertChild(n, yoga(k, parentDisplay: b.display), Int(i)) }
@@ -254,7 +280,7 @@ final class NativeFrontEnd {
 	private func applyStyle(_ b: Box, _ n: YGNodeRef, parentDisplay: String) {
 		let cx = CSS.Ctx(fontSize: b.cs.fontSize, vw: W, vh: H)
 		func L(_ k: String) -> CSS.Len? { b[k].flatMap { CSS.length($0, cx) } }
-		let flexParent = ["flex", "inline-flex"].contains(parentDisplay)
+		let flexParent = ["flex", "inline-flex"].contains(parentDisplay) && b.parent?.tag != "#anon-line" // inline content never shrinks
 		switch b.display {
 		case "none": YGNodeStyleSetDisplay(n, .none)
 		case "contents": YGNodeStyleSetDisplay(n, .contents)

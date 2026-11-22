@@ -222,12 +222,27 @@ final class Paragraph {
 		return lines
 	}
 
-	private func metrics(_ f: CTFont, _ st: Computed) -> (a: Double, d: Double, lh: Double) {
+	private func metrics(_ f: CTFont, _ st: Computed) -> (a: Double, d: Double, lh: Double) { Paragraph.metrics(f, st) }
+	static func metrics(_ f: CTFont, _ st: Computed) -> (a: Double, d: Double, lh: Double) {
 		let a = Double(CTFontGetAscent(f)).rounded(), d = Double(CTFontGetDescent(f)).rounded(), g = max(0, Double(CTFontGetLeading(f)).rounded())
 		let lh: Double
 		// a computed line-height becomes a LayoutUnit by truncation (24px × 1.4 = 33.6 → 33.59375)
 		switch st.lineHeight { case .normal: lh = a + d + g; case .px(let v): lh = floor(v * 64) / 64; case .factor(let k): lh = floor(k * st.fontSize * 64) / 64 }
 		return (a, d, lh)
+	}
+	/// half-leading like LayoutNG's CalculateLeadingSpace: the part above the baseline is floored to a whole pixel,
+	/// the rest goes below (Inter 18px at line-height 1.3: 17 + 1 above, 4 + 1.390625 below; Inter 800 92px at 1.08:
+	/// 89 − 6 above, Chrome places that text box exactly 6 px above the line top)
+	static func split(_ m: (a: Double, d: Double, lh: Double)) -> (Double, Double) {
+		let hl = (m.lh - (m.a + m.d)) / 2
+		let above = m.a + floor(hl)
+		return (above, m.lh - above)
+	}
+	/// A block's strut (root inline box) as (above, below) the baseline. Its primary font is the face that the
+	/// font-family list gives U+0020, like Blink's PrimaryFont().
+	static func strut(_ st: Computed, _ fonts: FontRegistry) -> (Double, Double) {
+		let (_, f) = fonts.attributed(" ", st.fontFamily, st.fontWeight, st.fontSize, st.italic, cgColor(st.color), 0)
+		return split(metrics(f, st))
 	}
 	private lazy var strutFont: CTFont = primaries.first ?? fonts.font(strut.fontFamily, strut.fontWeight, strut.fontSize)
 
@@ -236,13 +251,7 @@ final class Paragraph {
 		while trimEnd > a, utf16[trimEnd - 1] == 32, !["pre", "pre-wrap"].contains(style(at: trimEnd - 1).whiteSpace) { trimEnd -= 1 }
 		// strut
 		let sm = metrics(strutFont, strut)
-		// half-leading like LayoutNG's CalculateLeadingSpace: the part above the baseline is floored to a whole
-		// pixel, the rest goes below (Inter 18px at line-height 1.3: 17 + 1 above, 4 + 1.390625 below)
-		func split(_ m: (a: Double, d: Double, lh: Double)) -> (Double, Double) {
-			let hl = (m.lh - (m.a + m.d)) / 2
-			let above = m.a + floor(hl)
-			return (above, m.lh - above)
-		}
+		let split = Paragraph.split
 		var (maxAbove, maxBelow) = split(sm)
 		var runs: [PlacedRun] = []
 		guard trimEnd > a, let ts = typesetter else { return Line(width: 0, height: maxAbove + maxBelow, baseline: maxAbove, runs: [], start: a, end: a, last: last) }
